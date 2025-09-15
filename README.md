@@ -1,16 +1,12 @@
-# app_navi_swap_proto
+# MALAIA Application
 
-A new Flutter project.
+An Android app made with Flutter that uses YOLOv8 to detect P. falciparum and P. vivax in the ring, schizont, and trophozoite stage in thin peripheral blood smear images (PBS).
+Made for a research titled "MALAIA: AI Driven Microscopy System for Point-Of-Care Malaria Diagnosis" by Cruz, Vania.
 
-## Getting Started
+## Usage
 
-This project is a starting point for a Flutter application.
+(to be inserted)
 
-A few resources to get you started if this is your first Flutter project:
+## More Info
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+(to be inserted)
