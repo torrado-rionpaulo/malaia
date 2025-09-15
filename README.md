@@ -1,2 +1,16 @@
-# malaia_1.0.0
-An Android application that uses YOLOv8 to detect P. falciparum and P. vivax in thin peripheral blood smear images. Made for "MALAIA: AI Driven Microscopy System for Point-Of-Care Malaria Diagnosis" by Cruz, Vania
+# app_navi_swap_proto
+
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
