@@ -4,11 +4,19 @@ import 'package:ultralytics_yolo/yolo_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
+YOLO? _yolo;
+
 void main() {
-  runApp(
-    MaterialApp(
-      title: 'MALAIA', 
-      home: ImagePick(),
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'MALAIA',
       theme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
@@ -27,8 +35,9 @@ void main() {
           ),
         ),
       ),
-    )
-  );
+      home: const ImagePick(),
+    );
+  }
 }
 
 class ImagePick extends StatefulWidget {
@@ -39,8 +48,6 @@ class ImagePick extends StatefulWidget {
 }
 
 class _ImagePickState extends State<ImagePick> {
-
-  YOLO? yolo;
   File? selectedImage;
   List<dynamic> results = [];
   bool isLoading = false;
@@ -48,22 +55,23 @@ class _ImagePickState extends State<ImagePick> {
   @override
   void initState() {
     super.initState();
-    loadYOLO();
+    _loadYOLOModel();
   }
 
-  Future<void> loadYOLO() async {
-    setState(() => isLoading = true);
-
-    yolo = YOLO(
-      modelPath: 'malaia_v8s.tflite',
-      task: YOLOTask.detect,
-    );
-
-    await yolo!.loadModel();
-    setState(() => isLoading = false);
+  Future<void> _loadYOLOModel() async {
+    if (_yolo == null) {
+      setState(() => isLoading = true);
+      _yolo = YOLO(
+        modelPath: 'malaia_v8s.tflite',
+        task: YOLOTask.detect,
+      );
+      await _yolo!.loadModel();
+      setState(() => isLoading = false);
+    }
   }
 
-  Future<void> pickAndDetect() async {
+  Future<void> _pickAndDetect() async {
+    if (_yolo == null) return;
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
 
@@ -73,32 +81,38 @@ class _ImagePickState extends State<ImagePick> {
         isLoading = true;
       });
 
-      final imageBytes = await selectedImage!.readAsBytes();
-      final detectionResults = await yolo!.predict(imageBytes);
+      try {
+        final imageBytes = await selectedImage!.readAsBytes();
+        final detectionResults = await _yolo!.predict(imageBytes);
 
-      setState(() {
-        results = detectionResults['boxes'] ?? [];
-        isLoading = false;
-      });
+        setState(() {
+          results = detectionResults['boxes'] ?? [];
+          isLoading = false;
+        });
+      } catch (e) {
+        print('Error during detection: $e');
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.purple[800]),
-          title: Text(
-            'MALAIA Image Picker',
-            style: Theme.of(context).textTheme.titleLarge!
-          ),
-          backgroundColor: Colors.purple[100],
+    return Scaffold(
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.purple[800]),
+        title: Text(
+          'MALAIA Image Picker',
+          style: Theme.of(context).textTheme.titleLarge!,
         ),
-        drawer: Drawer(
+        backgroundColor: Colors.purple[100],
+      ),
+      drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-          children: <Widget>[ // Added type argument
+          children: <Widget>[
             SizedBox(
               height: 60,
               child: DrawerHeader(
@@ -106,84 +120,78 @@ class _ImagePickState extends State<ImagePick> {
                   color: Colors.purple[100],
                 ),
                 child: Text(
-                  'MALAIA Info', 
-                  style: Theme.of(context).textTheme.titleMedium!
+                  'MALAIA Info',
+                  style: Theme.of(context).textTheme.titleMedium!,
                 ),
               ),
             ),
-            ListTile(
+            const ListTile(
               title: Text('(Insert information about research and application)'),
             ),
           ],
         ),
       ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (selectedImage != null)
-                Container(
-                  height: 300,
-                  child: Image.file(selectedImage!),
-                ),
-
-              SizedBox(height: 20),
-
-              if (isLoading)
-                CircularProgressIndicator()
-              else
-                Text('Detected ${results.length} objects'),
-
-              SizedBox(height: 20),
-
-              ElevatedButton(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (selectedImage != null)
+              Container(
+                height: 300,
+                child: Image.file(selectedImage!),
+              ),
+            const SizedBox(height: 20),
+            if (isLoading)
+              const CircularProgressIndicator()
+            else
+              Text('Detected ${results.length} objects'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple[100],
+              ),
+              onPressed: _yolo != null ? _pickAndDetect : null,
+              child: Text(
+                'Pick Image & Detect',
+                style: Theme.of(context).textTheme.titleSmall!,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: results.length,
+                itemBuilder: (context, index) {
+                  final detection = results[index];
+                  return ListTile(
+                    title: Text(detection['class'] ?? 'Unknown'),
+                    subtitle: Text(
+                      'Confidence: ${(detection['confidence'] * 100).toStringAsFixed(1)}%',
+                    ),
+                  );
+                },
+              ),
+            ),
+            Align(
+              alignment: AlignmentDirectional.bottomCenter,
+              child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple[100],
                 ),
-                onPressed: yolo != null ? pickAndDetect : null,
-                child: Text('Pick Image & Detect', style: Theme.of(context).textTheme.titleSmall!),
-              ),
-
-              SizedBox(height: 20),
-
-              // Show detection results
-              Expanded(
-                child: ListView.builder(
-                  itemCount: results.length,
-                  itemBuilder: (context, index) {
-                    final detection = results[index];
-                    return ListTile(
-                      title: Text(detection['class'] ?? 'Unknown'),
-                      subtitle: Text(
-                        'Confidence: ${(detection['confidence'] * 100).toStringAsFixed(1)}%'
-                      ),
-                    );
-                  },
+                child: Text(
+                  'To Live Camera',
+                  style: Theme.of(context).textTheme.titleSmall!,
                 ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => const LiveCam(),
+                    ),
+                  );
+                },
               ),
-
-              Align(
-                alignment: AlignmentDirectional.bottomCenter,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple[100],
-                  ),
-                  child: Text(
-                    'To Live Camera', 
-                    style: Theme.of(context).textTheme.titleSmall!,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                        MaterialPageRoute<void>(
-                        builder: (context) => const LiveCam(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -197,8 +205,8 @@ class LiveCam extends StatefulWidget {
   _LiveCamState createState() => _LiveCamState();
 }
 
-class _LiveCamState extends State<LiveCam> {
-  late YOLOViewController controller;
+class _LiveCamState extends State<LiveCam> with TickerProviderStateMixin {
+  late final YOLOViewController controller;
   List<YOLOResult> currentResults = [];
 
   @override
@@ -208,21 +216,25 @@ class _LiveCamState extends State<LiveCam> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.purple[800]),
-          title: Text(
-            'MALAIA Image Picker',
-            style: Theme.of(context).textTheme.titleLarge!
-          ),
-          backgroundColor: Colors.purple[100],
+    return Scaffold(
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.purple[800]),
+        title: Text(
+          'MALAIA Live Camera',
+          style: Theme.of(context).textTheme.titleLarge!,
         ),
-        drawer: Drawer(
+        backgroundColor: Colors.purple[100],
+      ),
+      drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-          children: <Widget>[ // Added type argument
+          children: <Widget>[
             SizedBox(
               height: 60,
               child: DrawerHeader(
@@ -230,20 +242,19 @@ class _LiveCamState extends State<LiveCam> {
                   color: Colors.purple[100],
                 ),
                 child: Text(
-                  'MALAIA Info', 
-                  style: Theme.of(context).textTheme.titleMedium!
+                  'MALAIA Info',
+                  style: Theme.of(context).textTheme.titleMedium!,
                 ),
               ),
             ),
-            ListTile(
+            const ListTile(
               title: Text('(Insert information about research and application)'),
             ),
           ],
         ),
       ),
-        body: Stack(
+      body: Stack(
         children: [
-          // Camera view with YOLO processing
           YOLOView(
             modelPath: 'malaia_v8s.tflite',
             task: YOLOTask.detect,
@@ -263,20 +274,17 @@ class _LiveCamState extends State<LiveCam> {
               print('Processing time: ${metrics.processingTimeMs.toStringAsFixed(1)}ms');
             },
           ),
-
-          // Overlay UI
           Positioned(
             top: 50,
             left: 20,
             child: Container(
-              padding: EdgeInsets.all(10),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
-
           Align(
             alignment: AlignmentDirectional.bottomCenter,
             child: ElevatedButton(
@@ -284,22 +292,16 @@ class _LiveCamState extends State<LiveCam> {
                 backgroundColor: Colors.purple[100],
               ),
               child: Text(
-                'To Image Picker', 
-                style: Theme.of(context).textTheme.titleSmall!
+                'To Image Picker',
+                style: Theme.of(context).textTheme.titleSmall!,
               ),
               onPressed: () {
-                Navigator.push(
-                  context,
-                    MaterialPageRoute<void>(
-                    builder: (context) => const ImagePick(),
-                  ),
-                );
+                Navigator.pop(context);
               },
             ),
           ),
         ],
-        ),
-      )
+      ),
     );
   }
 }
