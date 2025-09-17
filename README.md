@@ -14,5 +14,8 @@ Made for a research titled "MALAIA: AI Driven Microscopy System for Point-Of-Car
 ## Sources
 
 [Ultralytics YOLO](https://docs.ultralytics.com/) - source and information about YOLO model
+
 [Ultralytics YOLO Flutter Plugin](https://github.com/ultralytics/yolo-flutter-app) - foundation of application, served as basis for most of the code
+
 [Flutter Docs](https://docs.flutter.dev/) - major resource for Flutter development
+
